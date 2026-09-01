@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dieline — Product Artwork Clipper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&family=Bebas+Neue&family=Caveat:wght@600&family=Oswald:wght@400;600;700&family=Anton&family=Montserrat:wght@400;600;800&family=Abril+Fatface&family=Permanent+Marker&family=Righteous&family=Merriweather:wght@400;700;900&family=Dancing+Script:wght@600;700&family=Archivo+Black&family=Pacifico&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #10161d;
+    --panel: #1a232c;
+    --panel-2: #212c37;
+    --hairline: #2c3945;
+    --text: #edf1f4;
+    --text-mute: #8695a3;
+    --magenta: #ff2e93;
+    --cyan: #3fd6ff;
+    --ok: #35d399;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  .topbar{
+    display:flex; align-items:center; gap:12px;
+    padding:16px 24px;
+    border-bottom:1px solid var(--hairline);
+    background: linear-gradient(180deg, #131a21, #10161d);
+  }
+  .logo{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700; font-size:19px; letter-spacing:0.2px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .logo .dot{ width:9px; height:9px; border-radius:50%; background:var(--magenta); box-shadow:0 0 10px var(--magenta); }
+  .topbar .sub{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--text-mute); letter-spacing:0.5px; }
+
+  .app{
+    display:flex;
+    flex:1;
+    min-height:0;
+  }
+
+  /* ---- Left rail ---- */
+  .rail{
+    width:340px; flex-shrink:0;
+    background:var(--panel);
+    border-right:1px solid var(--hairline);
+    overflow-y:auto;
+    padding:20px 20px 60px;
+  }
+  .section{ margin-bottom:26px; }
+  .section-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--cyan); margin-bottom:10px; display:flex; align-items:center; gap:8px;
+  }
+  .section-label::after{ content:''; flex:1; height:1px; background:var(--hairline); }
+
+  .upload-box{
+    border:1.5px dashed var(--hairline);
+    border-radius:10px;
+    padding:22px 14px;
+    text-align:center;
+    cursor:pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .upload-box:hover{ border-color: var(--cyan); background:var(--panel-2); }
+  .upload-box svg{ opacity:.6; margin-bottom:8px; }
+  .upload-box .t1{ font-size:13.5px; font-weight:500; }
+  .upload-box .t2{ font-size:11.5px; color:var(--text-mute); margin-top:3px; font-family:'IBM Plex Mono',monospace;}
+
+  .shape-grid{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; }
+  .shape-btn{
+    background:var(--panel-2); border:1px solid var(--hairline); border-radius:8px;
+    padding:10px 4px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px;
+    color:var(--text-mute); transition:.15s;
+  }
+  .shape-btn svg{ width:22px; height:22px; }
+  .shape-btn span{ font-size:10px; font-family:'IBM Plex Mono',monospace; letter-spacing:.3px; }
+  .shape-btn.active{ border-color:var(--magenta); color:var(--text); background:#2a1a26; }
+  .shape-btn.active svg{ stroke:var(--magenta); }
+  .shape-btn:hover{ color:var(--text); }
+
+  .dim-row{ display:flex; gap:10px; margin-top:12px; }
+  .field{ flex:1; }
+  .field label{ display:block; font-size:11px; color:var(--text-mute); margin-bottom:5px; font-family:'IBM Plex Mono',monospace; }
+  .field input[type=number]{
+    width:100%; background:var(--panel-2); border:1px solid var(--hairline); border-radius:6px;
+    color:var(--text); padding:8px 9px; font-family:'IBM Plex Mono',monospace; font-size:13px;
+  }
+  .field input[type=number]:focus{ outline:none; border-color:var(--cyan); }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .chip{
+    background:var(--panel-2); border:1px solid var(--hairline); color:var(--text-mute);
+    padding:5px 10px; border-radius:20px; font-size:11.5px; cursor:pointer; font-family:'IBM Plex Mono',monospace;
+  }
+  .chip:hover{ color:var(--text); border-color:var(--cyan); }
+
+  .slider-row{ margin-top:12px; }
+  .slider-row label{ display:flex; justify-content:space-between; font-size:11px; color:var(--text-mute); margin-bottom:6px; font-family:'IBM Plex Mono',monospace;}
+  input[type=range]{ width:100%; accent-color: var(--magenta); }
+
+  .color-row{ display:flex; align-items:center; gap:10px; margin-top:12px; }
+  input[type=color]{ width:34px; height:34px; border:none; border-radius:8px; background:none; padding:0; cursor:pointer; }
+  .color-row span{ font-size:12px; color:var(--text-mute); font-family:'IBM Plex Mono',monospace; }
+
+  .btn{
+    width:100%; padding:11px; border-radius:8px; border:1px solid var(--hairline);
+    background:var(--panel-2); color:var(--text); font-size:13px; font-weight:500; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px;
+  }
+  .btn:hover{ border-color:var(--cyan); }
+  .btn.primary{ background:var(--magenta); border-color:var(--magenta); color:#fff; font-weight:600; }
+  .btn.primary:hover{ filter:brightness(1.08); }
+  .btn.ghost{ background:transparent; }
+  .btn.small{ padding:8px; font-size:12px; }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+  .text-layer-item{
+    background:var(--panel-2); border:1px solid var(--hairline); border-radius:8px;
+    padding:10px; margin-top:8px; cursor:pointer;
+  }
+  .text-layer-item.selected{ border-color:var(--magenta); }
+  .text-layer-item .row1{ display:flex; justify-content:space-between; align-items:center; }
+  .text-layer-item .preview-text{ font-size:12.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:220px; }
+  .text-layer-item .del{ color:var(--text-mute); background:none; border:none; cursor:pointer; font-size:15px; }
+  .text-layer-item .del:hover{ color:var(--magenta); }
+
+  .text-editor{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--hairline); }
+  .text-editor textarea{
+    width:100%; background:var(--panel); border:1px solid var(--hairline); border-radius:6px;
+    color:var(--text); padding:8px; font-family:'Inter',sans-serif; font-size:13px; resize:vertical; min-height:44px;
+  }
+  select{
+    width:100%; background:var(--panel-2); border:1px solid var(--hairline); border-radius:6px;
+    color:var(--text); padding:8px 9px; font-size:13px; margin-top:8px;
+  }
+  .toggle-row{ display:flex; gap:8px; margin-top:8px; }
+  .toggle-btn{
+    flex:1; background:var(--panel); border:1px solid var(--hairline); border-radius:6px; color:var(--text-mute);
+    padding:7px; cursor:pointer; font-size:12.5px; font-weight:600;
+  }
+  .toggle-btn.on{ color:var(--magenta); border-color:var(--magenta); }
+
+  /* ---- Canvas stage ---- */
+  .stage{
+    flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column;
+    position:relative; padding:40px; overflow:auto; gap:16px;
+  }
+  .stage-hint{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--text-mute); text-align:center; max-width:360px; }
+
+  .canvas-frame{
+    position:relative;
+    padding:26px 26px 26px 26px;
+  }
+  .ruler-top, .ruler-left{
+    position:absolute; color:var(--cyan); font-family:'IBM Plex Mono',monospace; font-size:9px;
+  }
+  .ruler-top{ top:0; left:26px; right:26px; height:20px; display:flex; }
+  .ruler-left{ left:0; top:26px; bottom:26px; width:20px; display:flex; flex-direction:column; }
+  .tick{ position:relative; flex:1; border-left:1px solid rgba(63,214,255,0.25); }
+  .ruler-left .tick{ border-left:none; border-top:1px solid rgba(63,214,255,0.25); }
+  .tick .num{ position:absolute; top:2px; left:2px; }
+  .ruler-left .tick .num{ top:1px; left:3px; }
+
+  #artboardWrap{
+    position:relative;
+    background:
+      linear-gradient(45deg, #17202899 25%, transparent 25%),
+      linear-gradient(-45deg, #17202899 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #17202899 75%),
+      linear-gradient(-45deg, transparent 75%, #17202899 75%);
+    background-size:16px 16px;
+    background-position:0 0, 0 8px, 8px -8px, -8px 0px;
+    background-color:#0d1319;
+    border:1px solid var(--hairline);
+    cursor:grab;
+  }
+  #artboardWrap.dragging{ cursor:grabbing; }
+  #artboardWrap.dragging-text{ cursor:move; }
+  #mainCanvas{ display:block; }
+
+  .corner{ position:absolute; width:14px; height:14px; }
+  .corner.tl{ top:-2px; left:-2px; border-top:1.5px solid var(--magenta); border-left:1.5px solid var(--magenta); }
+  .corner.tr{ top:-2px; right:-2px; border-top:1.5px solid var(--magenta); border-right:1.5px solid var(--magenta); }
+  .corner.bl{ bottom:-2px; left:-2px; border-bottom:1.5px solid var(--magenta); border-left:1.5px solid var(--magenta); }
+  .corner.br{ bottom:-2px; right:-2px; border-bottom:1.5px solid var(--magenta); border-right:1.5px solid var(--magenta); }
+
+  .dims-readout{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--text-mute);
+    display:flex; gap:18px; align-items:center;
+  }
+  .dims-readout b{ color:var(--magenta); font-weight:600; }
+  .dims-readout .divider{ width:1px; height:12px; background:var(--hairline); }
+
+  @media (max-width:820px){
+    .app{ flex-direction:column; }
+    .rail{ width:100%; border-right:none; border-bottom:1px solid var(--hairline); max-height:46vh; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><span class="dot"></span>DIELINE</div>
+  <div class="sub">ARTWORK CLIPPER FOR PRINT &amp; PHYSICAL PRODUCTS</div>
+</div>
+
+<div class="app">
+  <!-- LEFT RAIL -->
+  <div class="rail">
+
+    <div class="section">
+      <div class="section-label">01 — Artwork</div>
+      <div class="upload-box" id="uploadBox">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div class="t1">Upload image</div>
+        <div class="t2">PNG · JPG · WEBP</div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+      </div>
+      <div class="slider-row" id="zoomRow" style="display:none;">
+        <label><span>Zoom</span><span id="zoomVal">100%</span></label>
+        <input type="range" id="zoomSlider" min="100" max="400" value="100">
+      </div>
+      <button class="btn small ghost" id="resetImgBtn" style="display:none;">Reset position &amp; zoom</button>
+    </div>
+
+    <div class="section">
+      <div class="section-label">02 — Shape</div>
+      <div class="shape-grid">
+        <div class="shape-btn active" data-shape="circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/></svg>
+          <span>CIRCLE</span>
+        </div>
+        <div class="shape-btn" data-shape="square">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="1.5"/></svg>
+          <span>SQUARE</span>
+        </div>
+        <div class="shape-btn" data-shape="rectangle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="6" width="19" height="12" rx="1.5"/></svg>
+          <span>RECT</span>
+        </div>
+        <div class="shape-btn" data-shape="oval">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="12" rx="9" ry="6.5"/></svg>
+          <span>OVAL</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label id="sizeLabel">SIZE (IN)</label>
+        <div id="sizeReadout" style="font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:600; color:var(--text); background:var(--panel-2); border:1px solid var(--hairline); border-radius:6px; padding:9px 10px;">2.25"</div>
+      </div>
+
+      <div class="chips" id="presetChips"></div>
+      <div class="t2" id="fixedSizeNote" style="display:none; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-mute); margin-top:8px; line-height:1.5;"></div>
+
+      <div class="slider-row" id="cornerRow" style="display:none;">
+        <label><span>Corner radius</span><span id="cornerVal">0"</span></label>
+        <input type="range" id="cornerSlider" min="0" max="1" step="0.01" value="0">
+      </div>
+
+      <div class="color-row">
+        <input type="color" id="bgColor" value="#ffffff">
+        <span>Backing color (behind artwork)</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Bleed / wrap margin</div>
+      <div class="toggle-row">
+        <button class="toggle-btn on" id="bleedToggle" style="flex:none; padding:7px 14px;">BLEED ON</button>
+        <span style="font-size:11px; color:var(--text-mute); font-family:'IBM Plex Mono',monospace; align-self:center;">for pin-back button wrap</span>
+      </div>
+      <div class="slider-row" id="bleedRow">
+        <label><span>Bleed margin</span><span id="bleedVal">0.125"</span></label>
+        <input type="range" id="bleedSlider" min="0" max="0.5" step="0.0625" value="0.125">
+      </div>
+      <div class="t2" style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-mute); line-height:1.5; margin-top:6px;">
+        With bleed on, artwork fills edge-to-edge (no transparency) and the export is sized finished-diameter + margin on all sides — the magenta line marks the actual cut edge, the outer edge is what wraps around the pin.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">03 — Text</div>
+      <button class="btn" id="addTextBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add text layer
+      </button>
+      <div id="textLayerList"></div>
+      <div id="textEditor"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">04 — Order</div>
+      <div class="field">
+        <label>PRODUCT</label>
+        <div id="orderProductName" style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--text); background:var(--panel-2); border:1px solid var(--hairline); border-radius:6px; padding:9px 10px;">Round 2.25" Pinback — $4.50</div>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>QUANTITY</label>
+        <input type="number" id="orderQty" min="1" max="1000" step="1" value="25">
+      </div>
+      <div class="chips" id="qtyChips" style="margin-top:8px;"></div>
+      <button class="btn primary" id="addToCartBtn" style="margin-top:12px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        Add to cart & checkout
+      </button>
+      <div class="t2" id="orderHint" style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-mute); line-height:1.5; margin-top:8px;">
+        With Cloudinary configured below, your design is attached to the order automatically — the customer never sees or touches a file upload field. Without it, checkout falls back to copying the artwork to the clipboard for a manual paste.
+      </div>
+
+      <div class="field" style="margin-top:14px;">
+        <label>CLOUDINARY CLOUD NAME</label>
+        <input type="text" id="cloudinaryCloudName" placeholder="e.g. dxyz1234a" value="txb2vl2t" style="width:100%; background:var(--panel-2); border:1px solid var(--hairline); border-radius:6px; color:var(--text); padding:8px 9px; font-family:'IBM Plex Mono',monospace; font-size:12.5px;">
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <label>UNSIGNED UPLOAD PRESET</label>
+        <input type="text" id="cloudinaryPreset" placeholder="e.g. pinback_designs" value="ml_default" style="width:100%; background:var(--panel-2); border:1px solid var(--hairline); border-radius:6px; color:var(--text); padding:8px 9px; font-family:'IBM Plex Mono',monospace; font-size:12.5px;">
+      </div>
+      <div class="t2" style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-mute); margin-top:6px; line-height:1.5;">
+        Both values are safe to expose client-side — the preset must be set to <b>Unsigned</b> in Cloudinary's Upload Settings for this to work (your actual API secret never goes in this page). With this set, the design shows up as a <code>design_file_url</code> field on the order in your Foxy dashboard.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">05 — Send to print shop</div>
+      <button class="btn" id="copyClipboardBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy artwork to clipboard
+      </button>
+      <a class="btn ghost" id="openHpbBtn" href="https://www.halfpricebuttons.com/pinback-buttons-1/" target="_blank" rel="noopener" style="text-decoration:none; display:flex;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open Half Price Buttons ↗
+      </a>
+      <div class="t2" style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-mute); line-height:1.5; margin-top:8px;" id="clipboardHint">
+        For placing your own production order with Half Price Buttons once you've been paid. Browsers block a page from reaching into another site's form to upload a file automatically — this copies the artwork to your clipboard so you can paste it (Ctrl/Cmd+V) into their upload field, or drag the exported PNG in if it doesn't accept paste. Clipboard copy needs the page loaded over https (won't work opened as a local file).
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">06 — Export</div>
+      <div class="field">
+        <label>RESOLUTION</label>
+        <select id="dpiSelect">
+          <option value="150">150 DPI — screen / preview</option>
+          <option value="300" selected>300 DPI — standard print</option>
+          <option value="600">600 DPI — high detail</option>
+        </select>
+      </div>
+      <button class="btn primary" id="exportBtn" style="margin-top:14px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export clipped PNG
+      </button>
+    </div>
+
+    <div class="section">
+      <div class="section-label">07 — Project</div>
+      <button class="btn" id="saveProjectBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save project file
+      </button>
+      <button class="btn ghost" id="loadProjectBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Load project file
+      </button>
+      <input type="file" id="projectFileInput" accept="application/json" style="display:none">
+      <div class="t2" style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-mute); line-height:1.5; margin-top:8px;">
+        Saves as a .dieline.json file on your computer — includes the image, shape, size, text, and colors, so you can reopen it later or work on several buttons at once.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CANVAS STAGE -->
+  <div class="stage">
+    <div class="stage-hint" id="stageHint">Upload an image to begin. Drag inside the shape to reposition it, scroll or use Zoom to scale.</div>
+    <div class="canvas-frame">
+      <div class="ruler-top" id="rulerTop"></div>
+      <div class="ruler-left" id="rulerLeft"></div>
+      <div id="artboardWrap">
+        <canvas id="mainCanvas"></canvas>
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+      </div>
+    </div>
+    <div class="dims-readout">
+      <span>SHAPE: <b id="readShape">CIRCLE</b></span>
+      <div class="divider"></div>
+      <span>SIZE: <b id="readSize">2.00" × 2.00"</b></span>
+      <div class="divider"></div>
+      <span>EXPORT: <b id="readExport">600 × 600 px</b></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const state = {
+    shape: 'circle',
+    widthIn: 2.25, heightIn: 2.25, cornerRadiusIn: 0,
+    bleedEnabled: true, bleedIn: 0.125,
+    dpi: 300,
+    bgColor: '#ffffff',
+    img: null, imgNaturalW:0, imgNaturalH:0,
+    imgScale: 1, imgOffX: 0, imgOffY: 0,
+    texts: [],
+    selectedTextId: null,
+    nextId: 1
+  };
+
+  const el = id => document.getElementById(id);
+  const canvas = el('mainCanvas');
+  const ctx = canvas.getContext('2d');
+  const wrap = el('artboardWrap');
+  const MAX_DISPLAY = 420;
+
+  // ---------- geometry helpers ----------
+  function shapeIsEllipse(){ return state.shape === 'circle' || state.shape === 'oval'; }
+  function lockedSquare(){ return state.shape === 'circle' || state.shape === 'square'; }
+
+  function bleedIn(){ return state.bleedEnabled ? state.bleedIn : 0; }
+  function totalWidthIn(){ return state.widthIn + 2*bleedIn(); }
+  function totalHeightIn(){ return state.heightIn + 2*bleedIn(); }
+
+  function displayDims(){
+    const scale = MAX_DISPLAY / Math.max(totalWidthIn(), totalHeightIn());
+    return { w: totalWidthIn()*scale, h: totalHeightIn()*scale, scale };
+  }
+
+  // path for the FINISHED (cut) shape, inset by bleed margin within a W×H total canvas
+  function finishedPath(c, W, H){
+    const pxPerIn = W/totalWidthIn();
+    const bpx = bleedIn()*pxPerIn;
+    const fw = state.widthIn*pxPerIn, fh = state.heightIn*pxPerIn;
+    c.beginPath();
+    if(shapeIsEllipse()){
+      c.ellipse(bpx+fw/2, bpx+fh/2, fw/2, fh/2, 0, 0, Math.PI*2);
+    } else {
+      const r = Math.min(state.cornerRadiusIn * pxPerIn, Math.min(fw,fh)/2);
+      const rr = Math.max(0, r);
+      const x0=bpx, y0=bpx, x1=bpx+fw, y1=bpx+fh;
+      c.moveTo(x0+rr,y0);
+      c.lineTo(x1-rr,y0); c.arcTo(x1,y0,x1,y0+rr,rr);
+      c.lineTo(x1,y1-rr); c.arcTo(x1,y1,x1-rr,y1,rr);
+      c.lineTo(x0+rr,y1); c.arcTo(x0,y1,x0,y1-rr,rr);
+      c.lineTo(x0,y0+rr); c.arcTo(x0,y0,x0+rr,y0,rr);
+    }
+    c.closePath();
+  }
+
+  function drawScene(c, W, H, withDieline){
+    c.clearRect(0,0,W,H);
+    const hasBleed = state.bleedEnabled;
+
+    c.save();
+    if(!hasBleed){ finishedPath(c, W, H); c.clip(); }
+    c.fillStyle = state.bgColor;
+    c.fillRect(0,0,W,H);
+
+    if(state.img){
+      const baseScale = Math.max(W/state.imgNaturalW, H/state.imgNaturalH);
+      const s = baseScale * state.imgScale;
+      const dw = state.imgNaturalW*s, dh = state.imgNaturalH*s;
+      const dx = (W-dw)/2 + state.imgOffX*W;
+      const dy = (H-dh)/2 + state.imgOffY*H;
+      c.drawImage(state.img, dx, dy, dw, dh);
+    }
+    c.restore();
+
+    // text sits within the finished (safe) box regardless of bleed
+    const pxPerIn = W/totalWidthIn();
+    const bpx = bleedIn()*pxPerIn;
+    const fw = state.widthIn*pxPerIn, fh = state.heightIn*pxPerIn;
+    state.texts.forEach(t=> drawTextLayer(c, t, W, H, pxPerIn, bpx, fw, fh));
+
+    if(withDieline){
+      c.save();
+      finishedPath(c, W, H);
+      c.setLineDash([6,5]);
+      c.lineWidth = 1.6;
+      c.strokeStyle = '#ff2e93';
+      c.stroke();
+      c.restore();
+
+      if(hasBleed){
+        c.save();
+        c.setLineDash([2,4]);
+        c.lineWidth = 1;
+        c.strokeStyle = 'rgba(63,214,255,0.6)';
+        c.strokeRect(0.5,0.5,W-1,H-1);
+        c.restore();
+      }
+
+      if(state.selectedTextId){
+        const t = state.texts.find(x=>x.id===state.selectedTextId);
+        if(t){
+          const anchorX = bpx + t.x*fw, anchorY = bpx + t.y*fh;
+          const b = textBounds(c, t, anchorX, anchorY, pxPerIn);
+          c.save();
+          c.setLineDash([3,3]);
+          c.strokeStyle = '#3fd6ff';
+          c.lineWidth = 1;
+          c.strokeRect(b.minX-4, b.minY-4, (b.maxX-b.minX)+8, (b.maxY-b.minY)+8);
+          c.restore();
+        }
+      }
+    }
+  }
+
+  function render(){
+    const {w,h} = displayDims();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = w*dpr; canvas.height = h*dpr;
+    canvas.style.width = w+'px'; canvas.style.height = h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    drawScene(ctx, w, h, true);
+    renderRulers(w,h);
+    updateReadout();
+  }
+
+  function renderRulers(w,h){
+    const top = el('rulerTop'), left = el('rulerLeft');
+    top.innerHTML=''; left.innerHTML='';
+    const stepsW = Math.max(1, Math.round(totalWidthIn()/0.25));
+    const stepsH = Math.max(1, Math.round(totalHeightIn()/0.25));
+    for(let i=0;i<stepsW;i++){
+      const d=document.createElement('div'); d.className='tick';
+      if(i%4===0){ const n=document.createElement('span'); n.className='num'; n.textContent=(i*0.25)+'"'; d.appendChild(n); }
+      top.appendChild(d);
+    }
+    for(let i=0;i<stepsH;i++){
+      const d=document.createElement('div'); d.className='tick';
+      if(i%4===0){ const n=document.createElement('span'); n.className='num'; n.textContent=(i*0.25)+'"'; d.appendChild(n); }
+      left.appendChild(d);
+    }
+  }
+
+  function updateReadout(){
+    el('readShape').textContent = state.shape.toUpperCase();
+    el('readSize').textContent = `${state.widthIn.toFixed(2)}" × ${state.heightIn.toFixed(2)}"` + (state.bleedEnabled ? ` (+${state.bleedIn.toFixed(3)}" bleed)` : '');
+    el('readExport').textContent = `${Math.round(totalWidthIn()*state.dpi)} × ${Math.round(totalHeightIn()*state.dpi)} px`;
+  }
+
+  // ---------- vendor size catalog (Half Price Buttons) ----------
+  const SIZE_CATALOG = {
+    circle:    [1, 1.25, 1.5, 1.75, 2.25, 2.5, 3],
+    square:    [1.5],
+    rectangle: [{w:2.75, h:1.75}],
+    oval:      [{w:2.75, h:1.75}]
+  };
+
+  // ---------- Foxy checkout catalog ----------
+  // ⚠️ PLACEHOLDER PRICES — only round_225_pb ($4.50) was confirmed by you.
+  // Edit the "price" values below to match your real per-unit pricing before going live.
+  // "code" must match the product codes set up in your Foxy store.
+  const FOXY_STORE = 'gift-shop-magnets.foxycart.com';
+  const FOXY_CATALOG = {
+    'circle-1x1':         { name:'Round 1" Pinback',            price:3.50, code:'round_100_pb' },
+    'circle-1.25x1.25':   { name:'Round 1.25" Pinback',         price:3.75, code:'round_125_pb' },
+    'circle-1.5x1.5':     { name:'Round 1.5" Pinback',          price:4.00, code:'round_150_pb' },
+    'circle-1.75x1.75':   { name:'Round 1.75" Pinback',         price:4.25, code:'round_175_pb' },
+    'circle-2.25x2.25':   { name:'Round 2.25" Pinback',         price:4.50, code:'round_225_pb' }, // confirmed
+    'circle-2.5x2.5':     { name:'Round 2.5" Pinback',          price:5.00, code:'round_250_pb' },
+    'circle-3x3':         { name:'Round 3" Pinback',            price:5.75, code:'round_300_pb' },
+    'square-1.5x1.5':     { name:'Square 1.5" Pinback',         price:4.00, code:'square_150_pb' },
+    'rectangle-2.75x1.75':{ name:'Rectangle 2.75×1.75" Pinback',price:4.75, code:'rect_275x175_pb' },
+    'oval-2.75x1.75':     { name:'Oval 2.75×1.75" Pinback',     price:4.75, code:'oval_275x175_pb' }
+  };
+  function currentProductKey(){ return `${state.shape}-${state.widthIn}x${state.heightIn}`; }
+  function currentProduct(){ return FOXY_CATALOG[currentProductKey()]; }
+
+  function applyCatalogDefault(){
+    const cat = SIZE_CATALOG[state.shape];
+    const first = cat[0];
+    if(typeof first === 'number'){ state.widthIn = first; state.heightIn = first; }
+    else { state.widthIn = first.w; state.heightIn = first.h; }
+    el('cornerSlider').max = Math.min(state.widthIn, state.heightIn)/2;
+  }
+
+  function refreshSizeUI(){
+    el('sizeLabel').textContent = shapeIsEllipse() ? 'DIAMETER (IN)' : (state.shape==='square' ? 'SIZE (IN)' : 'SIZE (W × H, IN)');
+    el('sizeReadout').textContent = (state.widthIn===state.heightIn)
+      ? `${state.widthIn}"` : `${state.widthIn}" × ${state.heightIn}"`;
+
+    const cat = SIZE_CATALOG[state.shape];
+    const chipsBox = el('presetChips');
+    const note = el('fixedSizeNote');
+    if(cat.length > 1){
+      chipsBox.style.display = 'flex';
+      note.style.display = 'none';
+      chipsBox.innerHTML = '';
+      cat.forEach(v=>{
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        const isActive = state.widthIn===v;
+        if(isActive) chip.style.cssText = 'border-color:var(--magenta); color:var(--text);';
+        chip.textContent = v+'"';
+        chip.addEventListener('click', ()=>{
+          state.widthIn = v; state.heightIn = v;
+          el('cornerSlider').max = Math.min(state.widthIn,state.heightIn)/2;
+          refreshSizeUI(); render();
+        });
+        chipsBox.appendChild(chip);
+      });
+    } else {
+      chipsBox.style.display = 'none';
+      note.style.display = 'block';
+      note.textContent = `Half Price Buttons offers ${state.shape} pinback buttons in a single size: ${state.widthIn}" × ${state.heightIn}".`;
+    }
+    el('cornerRow').style.display = (state.shape==='rectangle') ? 'block' : 'none';
+    refreshOrderUI();
+  }
+
+  function refreshOrderUI(){
+    const p = currentProduct();
+    const nameEl = el('orderProductName');
+    const btn = el('addToCartBtn');
+    if(!p){
+      nameEl.textContent = 'No matching product configured for this size';
+      nameEl.style.color = 'var(--text-mute)';
+      btn.disabled = true;
+      return;
+    }
+    nameEl.style.color = 'var(--text)';
+    nameEl.textContent = `${p.name} — $${p.price.toFixed(2)}`;
+    btn.disabled = false;
+  }
+
+  function buildQtyChips(){
+    const box = el('qtyChips'); box.innerHTML='';
+    [10,25,50,100,250].forEach(v=>{
+      const chip = document.createElement('div');
+      chip.className='chip';
+      chip.textContent = v;
+      chip.addEventListener('click', ()=>{ el('orderQty').value = v; });
+      box.appendChild(chip);
+    });
+  }
+  buildQtyChips();
+
+  document.querySelectorAll('.shape-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.shape-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      state.shape = btn.dataset.shape;
+      applyCatalogDefault();
+      refreshSizeUI();
+      render();
+    });
+  });
+
+  el('cornerSlider').addEventListener('input', e=>{
+    state.cornerRadiusIn = parseFloat(e.target.value);
+    el('cornerVal').textContent = state.cornerRadiusIn.toFixed(2)+'"';
+    render();
+  });
+
+  applyCatalogDefault();
+  refreshSizeUI();
+
+  el('bleedToggle').addEventListener('click', ()=>{
+    state.bleedEnabled = !state.bleedEnabled;
+    el('bleedToggle').classList.toggle('on', state.bleedEnabled);
+    el('bleedToggle').textContent = state.bleedEnabled ? 'BLEED ON' : 'BLEED OFF';
+    el('bleedRow').style.display = state.bleedEnabled ? 'block' : 'none';
+    render();
+  });
+  el('bleedSlider').addEventListener('input', e=>{
+    state.bleedIn = parseFloat(e.target.value);
+    el('bleedVal').textContent = state.bleedIn.toFixed(3).replace(/0+$/,'').replace(/\.$/,'') + '"';
+    render();
+  });
+
+  el('bgColor').addEventListener('input', e=>{ state.bgColor = e.target.value; render(); });
+  el('dpiSelect').addEventListener('change', e=>{ state.dpi = parseInt(e.target.value); updateReadout(); });
+
+  // ---------- image upload ----------
+  el('uploadBox').addEventListener('click', ()=> el('fileInput').click());
+  el('fileInput').addEventListener('change', e=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      const img = new Image();
+      img.onload = ()=>{
+        state.img = img;
+        state.imgNaturalW = img.width;
+        state.imgNaturalH = img.height;
+        state.imgScale = 1; state.imgOffX = 0; state.imgOffY = 0;
+        el('zoomRow').style.display='block';
+        el('zoomSlider').value = 100;
+        el('zoomVal').textContent='100%';
+        el('resetImgBtn').style.display='block';
+        el('stageHint').style.display='none';
+        render();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  el('zoomSlider').addEventListener('input', e=>{
+    state.imgScale = e.target.value/100;
+    el('zoomVal').textContent = e.target.value+'%';
+    render();
+  });
+  el('resetImgBtn').addEventListener('click', ()=>{
+    state.imgScale=1; state.imgOffX=0; state.imgOffY=0;
+    el('zoomSlider').value=100; el('zoomVal').textContent='100%';
+    render();
+  });
+
+  // ---------- drag interactions (image pan + text move) ----------
+  let dragMode = null; // 'image' | 'text'
+  let dragStart = {x:0,y:0};
+  let dragOrigin = {};
+
+  // ---------- text layout helper ----------
+  // Returns { mode:'straight', lines:[{chars:[{ch,x,y}], w}], lineHeight } for curve===0
+  // or { mode:'curve', chars:[{ch,x,y,rotate}] } for curve!==0 (single line, arc-following)
+  function layoutText(c, t, anchorX, anchorY, pxPerIn){
+    const sizePx = t.sizeIn * pxPerIn;
+    const spacingPx = (t.letterSpacingIn||0) * pxPerIn;
+    c.font = `${t.italic?'italic ':''}${t.bold?'700':'400'} ${sizePx}px '${t.font}'`;
+
+    if(t.curve){
+      const raw = String(t.text||'').replace(/\n/g,' ');
+      const chars = raw.split('');
+      const widths = chars.map(ch=> c.measureText(ch).width);
+      const totalW = widths.reduce((a,b)=>a+b,0) + spacingPx*(chars.length-1);
+      // radius scales with product size so curve feels proportionate at any button size
+      const maxR = Math.max(state.widthIn, state.heightIn) * 3 * pxPerIn;
+      const minR = Math.max(state.widthIn, state.heightIn) * 0.15 * pxPerIn;
+      const amt = Math.min(100, Math.abs(t.curve))/100;
+      const rPx = maxR - amt*(maxR-minR);
+      const D = t.curve > 0 ? 1 : -1;
+
+      let cum = 0;
+      const centers = widths.map((w,i)=>{
+        const c0 = cum + w/2;
+        cum += w + spacingPx;
+        return c0;
+      });
+      const out = [];
+      chars.forEach((ch,i)=>{
+        const s = centers[i] - totalW/2;
+        const delta = s / rPx;
+        const x = anchorX + rPx*Math.sin(delta);
+        const y = anchorY + D*rPx*(1-Math.cos(delta));
+        const rotate = D*delta;
+        out.push({ch, x, y, rotate});
+      });
+      return { mode:'curve', chars: out, sizePx };
+    }
+
+    const rawLines = String(t.text||'').split('\n');
+    const lineHeight = sizePx*1.2;
+    const lines = rawLines.map((line,li)=>{
+      const chars = line.split('');
+      const widths = chars.map(ch=> c.measureText(ch).width);
+      const w = widths.reduce((a,b)=>a+b,0) + spacingPx*(Math.max(0,chars.length-1));
+      let cx = -w/2;
+      const y = (li - (rawLines.length-1)/2) * lineHeight;
+      const laidOut = chars.map((ch,i)=>{
+        const cw = widths[i];
+        const x = cx + cw/2;
+        cx += cw + spacingPx;
+        return {ch, x, y};
+      });
+      return {chars: laidOut, w, y};
+    });
+    return { mode:'straight', lines, sizePx, lineHeight };
+  }
+
+  function drawTextLayer(c, t, W, H, pxPerIn, bpx, fw, fh){
+    const anchorX = bpx + t.x*fw, anchorY = bpx + t.y*fh;
+    const layout = layoutText(c, t, anchorX, anchorY, pxPerIn);
+    c.save();
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.globalAlpha = t.opacity===undefined ? 1 : t.opacity;
+    const strokePx = (t.strokeWidthIn||0.015) * pxPerIn;
+
+    if(layout.mode === 'curve'){
+      layout.chars.forEach(cc=>{
+        c.save();
+        c.translate(cc.x, cc.y);
+        c.rotate(cc.rotate);
+        if(t.strokeEnabled){ c.lineWidth = strokePx*2; c.strokeStyle = t.strokeColor; c.strokeText(cc.ch, 0, 0); }
+        c.fillStyle = t.color;
+        c.fillText(cc.ch, 0, 0);
+        c.restore();
+      });
+    } else {
+      const rotRad = (t.rotationDeg||0) * Math.PI/180;
+      c.translate(anchorX, anchorY);
+      c.rotate(rotRad);
+      layout.lines.forEach(line=>{
+        line.chars.forEach(cc=>{
+          if(t.strokeEnabled){ c.lineWidth = strokePx*2; c.strokeStyle = t.strokeColor; c.strokeText(cc.ch, cc.x, line.y); }
+          c.fillStyle = t.color;
+          c.fillText(cc.ch, cc.x, line.y);
+        });
+      });
+    }
+    c.restore();
+  }
+
+  function textBounds(c, t, anchorX, anchorY, pxPerIn){
+    const layout = layoutText(c, t, anchorX, anchorY, pxPerIn);
+    if(layout.mode==='curve'){
+      let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+      layout.chars.forEach(cc=>{
+        minX=Math.min(minX,cc.x); maxX=Math.max(maxX,cc.x);
+        minY=Math.min(minY,cc.y); maxY=Math.max(maxY,cc.y);
+      });
+      const pad = layout.sizePx*0.7;
+      return {minX:minX-pad, maxX:maxX+pad, minY:minY-pad, maxY:maxY+pad};
+    }
+    const rot = (t.rotationDeg||0)*Math.PI/180;
+    let maxHalfW=0; layout.lines.forEach(l=>maxHalfW=Math.max(maxHalfW,l.w/2));
+    const halfH = (layout.lineHeight*layout.lines.length)/2;
+    // rotated bounding box approximation
+    const corners = [[-maxHalfW,-halfH],[maxHalfW,-halfH],[maxHalfW,halfH],[-maxHalfW,halfH]]
+      .map(([x,y])=>[x*Math.cos(rot)-y*Math.sin(rot)+anchorX, x*Math.sin(rot)+y*Math.cos(rot)+anchorY]);
+    const xs = corners.map(p=>p[0]), ys = corners.map(p=>p[1]);
+    return {minX:Math.min(...xs), maxX:Math.max(...xs), minY:Math.min(...ys), maxY:Math.max(...ys)};
+  }
+
+
+  function hitTestText(px, py, W, H){
+    // px,py in canvas display px
+    const pxPerIn = W/totalWidthIn();
+    const bpx = bleedIn()*pxPerIn;
+    const fw = state.widthIn*pxPerIn, fh = state.heightIn*pxPerIn;
+    for(let i=state.texts.length-1;i>=0;i--){
+      const t = state.texts[i];
+      const anchorX = bpx + t.x*fw, anchorY = bpx + t.y*fh;
+      const b = textBounds(ctx, t, anchorX, anchorY, pxPerIn);
+      if(px>b.minX-6 && px<b.maxX+6 && py>b.minY-4 && py<b.maxY+4) return t;
+    }
+    return null;
+  }
+
+  wrap.addEventListener('pointerdown', e=>{
+    const rect = canvas.getBoundingClientRect();
+    const px = e.clientX-rect.left, py = e.clientY-rect.top;
+    const hit = hitTestText(px, py, rect.width, rect.height);
+    if(hit){
+      dragMode='text'; state.selectedTextId = hit.id;
+      dragStart = {x:e.clientX, y:e.clientY};
+      dragOrigin = {x:hit.x, y:hit.y};
+      wrap.classList.add('dragging-text');
+      renderTextList(); renderTextEditor(); render();
+    } else if(state.img){
+      dragMode='image'; state.selectedTextId=null;
+      dragStart = {x:e.clientX, y:e.clientY};
+      dragOrigin = {x:state.imgOffX, y:state.imgOffY};
+      wrap.classList.add('dragging');
+      renderTextList(); renderTextEditor(); render();
+    }
+    wrap.setPointerCapture(e.pointerId);
+  });
+
+  wrap.addEventListener('pointermove', e=>{
+    if(!dragMode) return;
+    const rect = canvas.getBoundingClientRect();
+    const dx = (e.clientX-dragStart.x)/rect.width;
+    const dy = (e.clientY-dragStart.y)/rect.height;
+    if(dragMode==='image'){
+      state.imgOffX = dragOrigin.x + dx;
+      state.imgOffY = dragOrigin.y + dy;
+    } else if(dragMode==='text'){
+      const t = state.texts.find(x=>x.id===state.selectedTextId);
+      if(t){
+        t.x = Math.min(1,Math.max(0, dragOrigin.x + dx));
+        t.y = Math.min(1,Math.max(0, dragOrigin.y + dy));
+      }
+    }
+    render();
+  });
+
+  function endDrag(){ dragMode=null; wrap.classList.remove('dragging'); wrap.classList.remove('dragging-text'); }
+  wrap.addEventListener('pointerup', endDrag);
+  wrap.addEventListener('pointerleave', ()=>{ if(dragMode==='image') endDrag(); });
+
+  wrap.addEventListener('wheel', e=>{
+    if(!state.img) return;
+    e.preventDefault();
+    const delta = e.deltaY>0 ? -5 : 5;
+    let v = parseFloat(el('zoomSlider').value) + delta;
+    v = Math.min(400, Math.max(100, v));
+    el('zoomSlider').value = v;
+    state.imgScale = v/100;
+    el('zoomVal').textContent = Math.round(v)+'%';
+    render();
+  }, {passive:false});
+
+  // ---------- text layers ----------
+  const FONTS = [
+    'Space Grotesk','Inter','Montserrat','Oswald',
+    'Anton','Archivo Black','Bebas Neue','Righteous',
+    'Playfair Display','Abril Fatface','Merriweather',
+    'Caveat','Dancing Script','Permanent Marker','Pacifico',
+    'IBM Plex Mono'
+  ];
+
+  el('addTextBtn').addEventListener('click', ()=>{
+    const t = {
+      id: state.nextId++, text:'Your text', font:'Space Grotesk',
+      sizeIn: 0.28, color:'#111111', bold:true, italic:false,
+      x:0.5, y:0.5,
+      curve:0, letterSpacingIn:0, rotationDeg:0,
+      strokeEnabled:false, strokeColor:'#ffffff', strokeWidthIn:0.015,
+      opacity:1
+    };
+    state.texts.push(t);
+    state.selectedTextId = t.id;
+    renderTextList(); renderTextEditor(); render();
+  });
+
+  function renderTextList(){
+    const box = el('textLayerList'); box.innerHTML='';
+    state.texts.forEach(t=>{
+      const item = document.createElement('div');
+      item.className = 'text-layer-item' + (t.id===state.selectedTextId?' selected':'');
+      item.innerHTML = `<div class="row1"><span class="preview-text">${(t.text||'').replace(/</g,'&lt;')||'(empty)'}</span><button class="del">✕</button></div>`;
+      item.addEventListener('click', (e)=>{
+        if(e.target.classList.contains('del')) return;
+        state.selectedTextId = t.id;
+        renderTextList(); renderTextEditor(); render();
+      });
+      item.querySelector('.del').addEventListener('click', ()=>{
+        state.texts = state.texts.filter(x=>x.id!==t.id);
+        if(state.selectedTextId===t.id) state.selectedTextId=null;
+        renderTextList(); renderTextEditor(); render();
+      });
+      box.appendChild(item);
+    });
+  }
+
+  function renderTextEditor(){
+    const box = el('textEditor');
+    const t = state.texts.find(x=>x.id===state.selectedTextId);
+    if(!t){ box.innerHTML=''; return; }
+    // backfill defaults for text created before these controls existed
+    if(t.curve===undefined) t.curve=0;
+    if(t.letterSpacingIn===undefined) t.letterSpacingIn=0;
+    if(t.rotationDeg===undefined) t.rotationDeg=0;
+    if(t.strokeEnabled===undefined) t.strokeEnabled=false;
+    if(t.strokeColor===undefined) t.strokeColor='#ffffff';
+    if(t.strokeWidthIn===undefined) t.strokeWidthIn=0.015;
+    if(t.opacity===undefined) t.opacity=1;
+
+    const curveLabel = t.curve===0 ? 'Straight' : (t.curve>0 ? `Arc up ${Math.abs(t.curve)}%` : `Arc down ${Math.abs(t.curve)}%`);
+
+    box.innerHTML = `
+      <div class="text-editor">
+        <textarea id="tContent">${t.text}</textarea>
+        <select id="tFont">${FONTS.map(f=>`<option value="${f}" ${f===t.font?'selected':''}>${f}</option>`).join('')}</select>
+        <div class="slider-row">
+          <label><span>Size</span><span id="tSizeVal">${t.sizeIn.toFixed(2)}"</span></label>
+          <input type="range" id="tSize" min="0.08" max="1.2" step="0.01" value="${t.sizeIn}">
+        </div>
+        <div class="color-row">
+          <input type="color" id="tColor" value="${t.color}">
+          <span>Text color</span>
+        </div>
+        <div class="toggle-row">
+          <button class="toggle-btn ${t.bold?'on':''}" id="tBold">BOLD</button>
+          <button class="toggle-btn ${t.italic?'on':''}" id="tItalic">ITALIC</button>
+        </div>
+
+        <div class="slider-row">
+          <label><span>Curve</span><span id="tCurveVal">${curveLabel}</span></label>
+          <input type="range" id="tCurve" min="-100" max="100" step="1" value="${t.curve}">
+        </div>
+        <div class="t2" style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-mute); margin-top:-4px;">Drag right of center for text arching up (top of a circle), left for arching down (bottom of a circle). Curved text ignores line breaks and rotation.</div>
+
+        <div class="slider-row" id="tRotationRow" style="${t.curve? 'display:none;':''}">
+          <label><span>Rotation</span><span id="tRotationVal">${t.rotationDeg}°</span></label>
+          <input type="range" id="tRotation" min="-180" max="180" step="1" value="${t.rotationDeg}">
+        </div>
+
+        <div class="slider-row">
+          <label><span>Letter spacing</span><span id="tSpacingVal">${t.letterSpacingIn.toFixed(3)}"</span></label>
+          <input type="range" id="tSpacing" min="-0.03" max="0.25" step="0.005" value="${t.letterSpacingIn}">
+        </div>
+
+        <div class="slider-row">
+          <label><span>Opacity</span><span id="tOpacityVal">${Math.round(t.opacity*100)}%</span></label>
+          <input type="range" id="tOpacity" min="10" max="100" step="1" value="${Math.round(t.opacity*100)}">
+        </div>
+
+        <div class="toggle-row" style="margin-top:12px;">
+          <button class="toggle-btn ${t.strokeEnabled?'on':''}" id="tStroke" style="flex:none; padding:7px 14px;">OUTLINE</button>
+        </div>
+        <div id="tStrokeControls" style="${t.strokeEnabled?'':'display:none;'}">
+          <div class="color-row">
+            <input type="color" id="tStrokeColor" value="${t.strokeColor}">
+            <span>Outline color</span>
+          </div>
+          <div class="slider-row">
+            <label><span>Outline width</span><span id="tStrokeWidthVal">${t.strokeWidthIn.toFixed(3)}"</span></label>
+            <input type="range" id="tStrokeWidth" min="0.005" max="0.08" step="0.005" value="${t.strokeWidthIn}">
+          </div>
+        </div>
+      </div>
+    `;
+    el('tContent').addEventListener('input', e=>{ t.text=e.target.value; renderTextList(); render(); });
+    el('tFont').addEventListener('change', e=>{ t.font=e.target.value; render(); });
+    el('tSize').addEventListener('input', e=>{ t.sizeIn=parseFloat(e.target.value); el('tSizeVal').textContent=t.sizeIn.toFixed(2)+'"'; render(); });
+    el('tColor').addEventListener('input', e=>{ t.color=e.target.value; render(); });
+    el('tBold').addEventListener('click', ()=>{ t.bold=!t.bold; renderTextEditor(); render(); });
+    el('tItalic').addEventListener('click', ()=>{ t.italic=!t.italic; renderTextEditor(); render(); });
+
+    el('tCurve').addEventListener('input', e=>{
+      t.curve = parseInt(e.target.value);
+      const lbl = t.curve===0 ? 'Straight' : (t.curve>0 ? `Arc up ${Math.abs(t.curve)}%` : `Arc down ${Math.abs(t.curve)}%`);
+      el('tCurveVal').textContent = lbl;
+      el('tRotationRow').style.display = t.curve ? 'none' : 'block';
+      render();
+    });
+    el('tRotation').addEventListener('input', e=>{ t.rotationDeg=parseInt(e.target.value); el('tRotationVal').textContent=t.rotationDeg+'°'; render(); });
+    el('tSpacing').addEventListener('input', e=>{ t.letterSpacingIn=parseFloat(e.target.value); el('tSpacingVal').textContent=t.letterSpacingIn.toFixed(3)+'"'; render(); });
+    el('tOpacity').addEventListener('input', e=>{ t.opacity=parseInt(e.target.value)/100; el('tOpacityVal').textContent=e.target.value+'%'; render(); });
+    el('tStroke').addEventListener('click', ()=>{ t.strokeEnabled=!t.strokeEnabled; renderTextEditor(); render(); });
+    el('tStrokeColor').addEventListener('input', e=>{ t.strokeColor=e.target.value; render(); });
+    el('tStrokeWidth').addEventListener('input', e=>{ t.strokeWidthIn=parseFloat(e.target.value); el('tStrokeWidthVal').textContent=t.strokeWidthIn.toFixed(3)+'"'; render(); });
+  }
+
+  // ---------- export ----------
+  // ---------- PNG DPI metadata (pHYs chunk) ----------
+  // Canvas-exported PNGs carry no physical resolution, so viewers assume 72dpi
+  // and misreport the print size. We inject a pHYs chunk so software reads the
+  // correct inches at the DPI actually rendered.
+  const CRC_TABLE = (function(){
+    const t = new Uint32Array(256);
+    for(let n=0;n<256;n++){
+      let c = n;
+      for(let k=0;k<8;k++) c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1);
+      t[n]=c>>>0;
+    }
+    return t;
+  })();
+  function crc32(bytes){
+    let c = 0xFFFFFFFF;
+    for(let i=0;i<bytes.length;i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c>>>8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function u32(n){ return new Uint8Array([(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255]); }
+  function concatBytes(arrs){
+    const total = arrs.reduce((s,a)=>s+a.length,0);
+    const out = new Uint8Array(total);
+    let off=0; arrs.forEach(a=>{ out.set(a,off); off+=a.length; });
+    return out;
+  }
+  function pngWithDpi(arrayBuffer, dpi){
+    const bytes = new Uint8Array(arrayBuffer);
+    // signature = 8 bytes, then IHDR chunk = 4(len)+4(type)+13(data)+4(crc) = 25 bytes
+    const ihdrEnd = 8 + 25;
+    const head = bytes.slice(0, ihdrEnd);
+    const rest = bytes.slice(ihdrEnd);
+
+    const ppm = Math.round(dpi * 39.3701); // pixels per meter
+    const type = new TextEncoder().encode('pHYs');
+    const data = concatBytes([u32(ppm), u32(ppm), new Uint8Array([1])]); // unit 1 = meters
+    const crc = crc32(concatBytes([type, data]));
+    const chunk = concatBytes([u32(9), type, data, u32(crc)]);
+
+    return concatBytes([head, chunk, rest]);
+  }
+
+  function buildExportBlob(){
+    const W = Math.round(totalWidthIn()*state.dpi);
+    const H = Math.round(totalHeightIn()*state.dpi);
+    const off = document.createElement('canvas');
+    off.width = W; off.height = H;
+    const octx = off.getContext('2d');
+    drawScene(octx, W, H, false);
+    return new Promise(resolve=>{
+      off.toBlob(blob=>{
+        blob.arrayBuffer().then(buf=>{
+          const withDpi = pngWithDpi(buf, state.dpi);
+          resolve(new Blob([withDpi], {type:'image/png'}));
+        });
+      }, 'image/png');
+    });
+  }
+
+  // Small preview thumbnail for the Foxy cart: clipped to the finished shape
+  // only (ignores bleed, since that's an artifact of print production, not
+  // something a customer should see in their cart).
+  function buildThumbnailBlob(maxPx){
+    maxPx = maxPx || 480;
+    const savedBleed = state.bleedEnabled;
+    state.bleedEnabled = false;
+    const scale = maxPx / Math.max(state.widthIn, state.heightIn);
+    const W = Math.round(state.widthIn*scale), H = Math.round(state.heightIn*scale);
+    const off = document.createElement('canvas');
+    off.width = W; off.height = H;
+    const octx = off.getContext('2d');
+    drawScene(octx, W, H, false);
+    state.bleedEnabled = savedBleed;
+    return new Promise(resolve=> off.toBlob(b=>resolve(b), 'image/png'));
+  }
+
+  // Uploads a blob to Cloudinary via an unsigned upload preset (no API secret
+  // needed in the browser — the preset itself, configured as "Unsigned" in
+  // Cloudinary's dashboard, is what authorizes the upload) and returns a
+  // public CDN URL, or null if not configured / upload fails.
+  async function uploadToCloudinary(blob, filename){
+    const cloudName = (el('cloudinaryCloudName').value || '').trim();
+    const preset = (el('cloudinaryPreset').value || '').trim();
+    if(!cloudName || !preset) return null;
+    try{
+      // Built manually as a Blob body rather than FormData: some sandboxed
+      // preview contexts relay fetch() through postMessage, and FormData
+      // can't survive that (structured-clone doesn't support it) — Blob does.
+      const boundary = '----ArtworkClipperBoundary' + Math.random().toString(16).slice(2);
+      const CRLF = '\r\n';
+      const parts = [
+        new Blob([`--${boundary}${CRLF}Content-Disposition: form-data; name="upload_preset"${CRLF}${CRLF}${preset}${CRLF}`]),
+        new Blob([`--${boundary}${CRLF}Content-Disposition: form-data; name="file"; filename="${filename}"${CRLF}Content-Type: ${blob.type||'image/png'}${CRLF}${CRLF}`]),
+        blob,
+        new Blob([`${CRLF}--${boundary}--${CRLF}`])
+      ];
+      const body = new Blob(parts, {type:`multipart/form-data; boundary=${boundary}`});
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`, { method:'POST', body });
+      if(!res.ok){
+        const errText = await res.text().catch(()=>'(no response body)');
+        console.error(`Cloudinary upload failed [${res.status}]:`, errText);
+        return null;
+      }
+      const data = await res.json();
+      return data.secure_url || data.url || null;
+    } catch(err){
+      console.error('Cloudinary upload threw an error:', err);
+      return null;
+    }
+  }
+
+  el('exportBtn').addEventListener('click', async ()=>{
+    const finalBlob = await buildExportBlob();
+    const url = URL.createObjectURL(finalBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    const bleedTag = state.bleedEnabled ? `-bleed${state.bleedIn}in` : '';
+    a.download = `artwork-${state.shape}-${state.widthIn}x${state.heightIn}in${bleedTag}-${state.dpi}dpi.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  async function copyArtworkToClipboard(){
+    if(!navigator.clipboard || !window.ClipboardItem) return {ok:false, reason:'unsupported'};
+    try{
+      const finalBlob = await buildExportBlob();
+      await navigator.clipboard.write([ new ClipboardItem({ 'image/png': finalBlob }) ]);
+      return {ok:true};
+    } catch(err){
+      return {ok:false, reason:'blocked'};
+    }
+  }
+
+  el('copyClipboardBtn').addEventListener('click', async ()=>{
+    const btn = el('copyClipboardBtn');
+    const original = btn.innerHTML;
+    const result = await copyArtworkToClipboard();
+    if(result.ok){
+      btn.innerHTML = '✓ Copied — paste into their upload field';
+    } else if(result.reason==='unsupported'){
+      btn.innerHTML = 'Clipboard not available — use Export instead';
+    } else {
+      btn.innerHTML = 'Copy blocked — use Export instead';
+    }
+    setTimeout(()=> btn.innerHTML = original, 2600);
+  });
+
+  el('addToCartBtn').addEventListener('click', async ()=>{
+    const btn = el('addToCartBtn');
+    const original = btn.innerHTML;
+    const p = currentProduct();
+    if(!p){ return; }
+    const qty = Math.max(1, parseInt(el('orderQty').value)||1);
+    const hasCloudinary = !!(el('cloudinaryCloudName').value || '').trim() && !!(el('cloudinaryPreset').value || '').trim();
+
+    let imageUrl = null, designFileUrl = null, clipResult = {ok:false};
+
+    if(hasCloudinary){
+      btn.innerHTML = 'Uploading design…';
+      const [thumbBlob, fullBlob] = await Promise.all([ buildThumbnailBlob(480), buildExportBlob() ]);
+      [imageUrl, designFileUrl] = await Promise.all([
+        uploadToCloudinary(thumbBlob, 'thumbnail.png'),
+        uploadToCloudinary(fullBlob, `design-${p.code}.png`)
+      ]);
+      btn.innerHTML = designFileUrl ? '✓ Design attached — opening checkout…' : 'Opening checkout…';
+    } else {
+      btn.innerHTML = 'Preparing…';
+      clipResult = await copyArtworkToClipboard();
+      btn.innerHTML = clipResult.ok ? '✓ Copied — opening checkout…' : 'Opening checkout…';
+    }
+
+    let url = `https://${FOXY_STORE}/cart?` +
+      `name=${encodeURIComponent(p.name)}` +
+      `&price=${p.price}USD` +
+      `&code=${encodeURIComponent(p.code)}` +
+      `&quantity=${qty}`;
+    if(imageUrl) url += `&image=${encodeURIComponent(imageUrl)}`;
+    if(designFileUrl) url += `&design_file_url=${encodeURIComponent(designFileUrl)}`;
+    window.open(url, '_blank', 'noopener');
+
+    setTimeout(()=> btn.innerHTML = original, 3000);
+  });
+
+  // ---------- save / load project ----------
+  function imageToDataURL(img){
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img,0,0);
+    return c.toDataURL('image/png');
+  }
+
+  el('saveProjectBtn').addEventListener('click', ()=>{
+    const data = {
+      type: 'dieline-project', version: 1,
+      shape: state.shape, widthIn: state.widthIn, heightIn: state.heightIn,
+      cornerRadiusIn: state.cornerRadiusIn, bleedEnabled: state.bleedEnabled, bleedIn: state.bleedIn,
+      dpi: state.dpi, bgColor: state.bgColor,
+      imgScale: state.imgScale, imgOffX: state.imgOffX, imgOffY: state.imgOffY,
+      imgData: state.img ? imageToDataURL(state.img) : null,
+      texts: state.texts, nextId: state.nextId
+    };
+    const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `button-${state.widthIn}x${state.heightIn}in.dieline.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  el('loadProjectBtn').addEventListener('click', ()=> el('projectFileInput').click());
+  el('projectFileInput').addEventListener('change', e=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      let data;
+      try{ data = JSON.parse(ev.target.result); } catch(err){ alert('This file could not be read as a project file.'); return; }
+      if(data.type !== 'dieline-project'){ alert('This does not look like a Dieline project file.'); return; }
+
+      state.shape = data.shape; state.widthIn = data.widthIn; state.heightIn = data.heightIn;
+      state.cornerRadiusIn = data.cornerRadiusIn||0;
+      state.bleedEnabled = data.bleedEnabled!==false; state.bleedIn = data.bleedIn ?? 0.125;
+      state.dpi = data.dpi||300; state.bgColor = data.bgColor||'#ffffff';
+      state.imgScale = data.imgScale||1; state.imgOffX = data.imgOffX||0; state.imgOffY = data.imgOffY||0;
+      state.texts = data.texts||[]; state.nextId = data.nextId||1;
+      state.selectedTextId = null;
+
+      // sync UI controls
+      document.querySelectorAll('.shape-btn').forEach(b=>b.classList.toggle('active', b.dataset.shape===state.shape));
+      refreshSizeUI();
+      el('cornerSlider').max = Math.min(state.widthIn,state.heightIn)/2;
+      el('cornerSlider').value = state.cornerRadiusIn;
+      el('cornerVal').textContent = state.cornerRadiusIn.toFixed(2)+'"';
+      el('bgColor').value = state.bgColor;
+      el('dpiSelect').value = String(state.dpi);
+      el('bleedToggle').classList.toggle('on', state.bleedEnabled);
+      el('bleedToggle').textContent = state.bleedEnabled ? 'BLEED ON' : 'BLEED OFF';
+      el('bleedRow').style.display = state.bleedEnabled ? 'block':'none';
+      el('bleedSlider').value = state.bleedIn;
+      el('bleedVal').textContent = state.bleedIn.toFixed(3).replace(/0+$/,'').replace(/\.$/,'') + '"';
+      buildPresetChips();
+      renderTextList(); renderTextEditor();
+
+      const finish = ()=>{ render(); };
+      if(data.imgData){
+        const img = new Image();
+        img.onload = ()=>{
+          state.img = img; state.imgNaturalW = img.width; state.imgNaturalH = img.height;
+          el('zoomRow').style.display='block'; el('resetImgBtn').style.display='block';
+          el('zoomSlider').value = Math.round(state.imgScale*100);
+          el('zoomVal').textContent = Math.round(state.imgScale*100)+'%';
+          el('stageHint').style.display='none';
+          finish();
+        };
+        img.src = data.imgData;
+      } else {
+        state.img = null;
+        el('zoomRow').style.display='none'; el('resetImgBtn').style.display='none';
+        el('stageHint').style.display='block';
+        finish();
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  // ---------- init ----------
+  el('cornerSlider').max = Math.min(state.widthIn,state.heightIn)/2;
+  render();
+  window.addEventListener('resize', render);
+})();
+</script>
+</body>
+</html>
