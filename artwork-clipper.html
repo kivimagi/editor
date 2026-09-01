@@ -1203,7 +1203,20 @@
         uploadToCloudinary(thumbBlob, 'thumbnail.png'),
         uploadToCloudinary(fullBlob, `design-${p.code}.png`)
       ]);
-      btn.innerHTML = designFileUrl ? '✓ Design attached — opening checkout…' : 'Opening checkout…';
+      if(designFileUrl){
+        btn.innerHTML = '✓ Design attached — opening checkout…';
+      } else {
+        // Upload failed — don't let this pass silently. Fall back to
+        // clipboard so there's still a way to get the design into the order.
+        clipResult = await copyArtworkToClipboard();
+        alert(
+          'Cloudinary upload failed — check the browser console (F12 → Console) for the exact error.\n\n' +
+          (clipResult.ok
+            ? 'Your artwork was copied to the clipboard as a backup — paste it manually once checkout opens.'
+            : 'Clipboard backup also unavailable. Checkout will open without the design attached.')
+        );
+        btn.innerHTML = 'Upload failed — see console';
+      }
     } else {
       btn.innerHTML = 'Preparing…';
       clipResult = await copyArtworkToClipboard();
